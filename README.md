@@ -14,4 +14,24 @@ Beeing busy with so many other things it seemed that I needed my time until I fi
 
 
 
+# GitHub integrated Agents into their Actions CI/CD workflows!
+
+What's really nice about Agentic workflows: Their are simply integrated into GitHub Actions, no new tool invented here! As I love GitHub Actions [for many reasons](https://www.codecentric.de/en/knowledge-hub/blog/github-actions-nextgen-cicd) that was great news for me. 
+
+Actions were simply enhanced using a ["frontmatter" syntax](https://github.github.com/gh-aw/reference/frontmatter/) which simply means using a configuration section between `---` markers directly your Actions workflow YAML files.
+
+There are many ways to create your first GitHub Agentic Workflow: e.g. through [the GitHub web interface](https://github.github.com/gh-aw/setup/creating-workflows/#create-a-new-workflow-with-the-github-web-interface), using [your coding agent of choice](https://github.github.com/gh-aw/setup/creating-workflows/#create-a-new-workflow-with-a-coding-agent-or-vs-code) - or even start [setting things up manually](https://github.github.com/gh-aw/setup/creating-workflows/#create-a-new-workflow-manually), which I prefer to use for this post, since I wanted to have a more in-depth look about whats going on.
+
+
+
+# Create your first GitHub Agentic Workflow
+
+
+
+
+
+# Links
+
 https://docs.github.com/en/copilot/concepts/agent-capabilities/agent-powered-workflows-and-operations/about-github-agentic-workflows
+
+https://github.blog/ai-and-ml/automate-repository-tasks-with-github-agentic-workflows/
