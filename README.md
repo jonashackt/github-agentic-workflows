@@ -56,14 +56,13 @@ But if you're using a unified AI gateway/LLM router (featuring multiple models) 
 
 > To route Claude through a custom Anthropic-compatible endpoint (e.g., an internal proxy or Azure-hosted model), set ANTHROPIC_BASE_URL in engine.env and store any additional credentials as secrets.
 
-So using requesty.ai will be as simple as using the following `engine.env` variables in our workflow file [.github/workflows/first-agentic-workflow.md](.github/workflows/first-agentic-workflow.md):
+So using requesty.ai needs the following `engine.env` variables in our workflow file [.github/workflows/first-agentic-workflow.md](.github/workflows/first-agentic-workflow.md):
 
 ```yaml
 engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.requesty.ai
-    ANTHROPIC_AUTH_TOKEN: ${{ secrets.REQUESTY_API_KEY }}
     ANTHROPIC_MODEL: anthropic/claude-sonnet-5-5
 
 network:
@@ -72,17 +71,59 @@ network:
     - router.requesty.ai #TODO: is this needed for requesty?
 ```
 
-This will route all requests through requesty, using the authentication as `ANTHROPIC_AUTH_TOKEN` defined in a common GitHub Actions Secret `REQUESTY_API_KEY`. You can create the Secret using the `gh aw` CLI like this:
+Staring at the last line you may already spotted that we need to configure `router.requesty.ai` [as an allowed network via the `network.allowed` keyword](https://github.github.com/gh-aw/reference/engines/?#custom-api-endpoints-via-environment-variables). This is needed, since the Agent Workflow Firewall (AWF) would otherwise block the request to requesty.
+
+
+As [the Requesty documentation states](https://www.requesty.ai/blog/claude-code-environment-variables-anthropic-base-url-auth-token), we should use `ANTHROPIC_AUTH_TOKEN` instead of `ANTHROPIC_API_KEY` when configuring a different LLM gateway than Anthropic.
+
+So I was tempted to use `engine.env.ANTHROPIC_AUTH_TOKEN: ${{ secrets.REQUESTY_API_KEY }}` as a configuration here also. Later on this lead me to an error:
 
 ```shell
-gh aw secrets set REQUESTY_API_KEY --value "YOUR_REQUESTY_API_KEY"
+gh aw compile
+✗ Compiled 1 workflow: 0 succeeded, 1 failed, 1 error, 0 warnings
+
+✗ Failed workflows:
+✗ first-agentic-workflow.md
+
+✗ first-agentic-workflow.md (1 error(s)):
+  • 🟡 MEDIUM PRIORITY:
+  • 1. .github/workflows/first-agentic-workflow.md:8:1: error: strict mode: secrets detected in 'engine.env' section are excluded from the agent sandbox via awf --exclude-env (requires AWF v0.25.3+) and are not accessible to the agent when that version is in use. Found: ${{ secrets.REQUESTY_API_KEY }}. Use engine-specific secret configuration instead. See: https://github.github.com/gh-aw/reference/engines/
+ 5 | permissions:
+ 6 |   contents: read
+ 7 |
+ 8 | engine:
+     ^^^^^^
+ 9 |   id: claude
+10 |   env:
+11 |     ANTHROPIC_BASE_URL: https://router.requesty.ai
+i → Adjust the permissions block to match the workflow's required scopes.
+✗ compilation failed
+```
+
+The reason is that the Agent Workflow Firewall (AWF) [blocks the usage of such secrets](https://github.github.com/gh-aw/reference/frontmatter/#environment-variables-env) directly in the `env` section in Actions workflow:
+
+> CAUTION: Do not use ${{ secrets.* }} expressions in the workflow-level env: section. Environment variables defined here are passed directly to the agent container, which means secret values would be visible to the AI model. In strict mode, this is a compilation error. In non-strict mode, it emits a warning.
+
+> Use engine-specific secret configuration instead of the env: section to pass secrets securely.
+
+This prevents secrets from beeing injected into workflows - and thus from potential leaks. Which might also be the good reason to have the scrict mode turned on in `gh aw compile`.
+
+So let's try to use the `ANTHROPIC_API_KEY` GitHub Actions secret instead. You can create the Secret using the `gh aw` CLI like this:
+
+```shell
+gh aw secrets set ANTHROPIC_API_KEY --value "REQUESTY_API_KEY"
 ```
 
 or using the GitHub UI:
 
+//TODO: change Secrets name
+
 ![](docs/github-actions-secrets-for-agentic-workflows.png)
 
-As you may also spotted, we need to configure `router.requesty.ai` [as an allowed network via the `network.allowed` keyword](https://github.github.com/gh-aw/reference/engines/?#custom-api-endpoints-via-environment-variables). This is needed, since the Agent Workflow Firewall (AWF) would otherwise block the request to requesty.
+Since this is a Agent Workflows build-in engine key, we don't need to define it inside our workflow anywhere.
+
+
+
 
 
 
@@ -103,7 +144,6 @@ engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.requesty.ai
-    ANTHROPIC_AUTH_TOKEN: ${{ secrets.REQUESTY_API_KEY }}
     ANTHROPIC_MODEL: anthropic/claude-sonnet-5-5
 
 network:
@@ -120,11 +160,69 @@ improvements to its build and CI/CD configuration.
 Provide a prioritized summary.
 ```
 
-With GitHub Agentic Workflows we have to execute another thing BEFORE beeing able to run our pipeline as we're accustomed by normal GitHub Actions: We need to compile your YAML file via the `gh aw compile` command:
+But be aware that __this is only a description of the Actions workflow, we want the GitHub Agentic AI engine to generate for us__. [The GitHub Agentic Workflows docs intro](https://github.github.com/gh-aw/introduction/overview/#coding-agents-running-with-tools-in-github-actions) has a good explanation ready for us:  
+
+> Instead of writing intricate scripts to handle issue triage, code reviews, or release management, you describe what you want to happen. The AI agent uses the repository context, tools, and permissions that the workflow allows to interpret the situation and request appropriate actions.
+
+So with GitHub Agentic Workflows we have to execute the `gh aw compile` command BEFORE beeing able to run our pipeline as we're accustomed by "normal" GitHub Actions. This command will trigger the GitHub AI-based generation of the actual GitHub Agentic Workflow:
 
 ```shell
 gh aw compile
 ```
+
+This will generate the "real" GitHub Actions based Agentic Workflow for us, residing in a `.lock.yml` file inside the `.github/workflows` dir. In our example this is [.github/workflows/first-agentic-workflow.lock.yml](.github/workflows/first-agentic-workflow.lock.yml).
+
+
+The `gh aw compile` should work, but also outputs the following warning:
+
+```shell
+gh aw compile
+.github/workflows/first-agentic-workflow.md: warning: safe update mode detected unapproved changes
+
+New restricted secret(s):
+  - ANTHROPIC_API_KEY
+
+Remediation options:
+  1. Use the --approve flag to allow the changes.
+  2. Revert the unapproved changes.
+  3. Use an interactive coding agent to review and approve the changes.
+
+✓ .github/workflows/first-agentic-workflow.md (110.2 KB)
+⚠ ⚠️  SECURITY REVIEW REQUIRED — safe update mode detected unapproved changes:
+
+safe update mode detected unapproved changes
+
+New restricted secret(s):
+  - ANTHROPIC_API_KEY
+
+Remediation options:
+  1. Use the --approve flag to allow the changes.
+  2. Revert the unapproved changes.
+  3. Use an interactive coding agent to review and approve the changes.
+
+Action required for the calling agent:
+  1. Review every new secret and action listed above for potential malicious use
+     (e.g. credential exfiltration, supply-chain attacks, unexpected network access).
+  2. Add a security review note to the pull request description that:
+     - Lists any new or removed secrets, actions, and redirect changes from this compilation.
+     - Confirms you have reviewed each one and explains why it is safe to add.
+     - Flags any item you cannot fully verify so a human reviewer can inspect it.
+
+⚠ Compiled 1 workflow: 1 succeeded, 1 warning
+```
+
+
+Since we can use the `--approve` flag here, since we were the one that created the new `ANTHROPIC_API_KEY` secret:
+
+```shell
+gh aw compile first-agentic-workflow --approve
+```
+
+That one should run without warnings.
+
+It's also worth to note that using `--approve` [won't deactivate the strict mode generally](https://github.github.com/gh-aw/specs/safe-update-specification/), so it can be used savely if you were the one changing secrets.
+
+So now our generated workflow in [.github/workflows/first-agentic-workflow.lock.yml](.github/workflows/first-agentic-workflow.lock.yml) should be ready to be committed!
 
 
 
