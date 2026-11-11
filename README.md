@@ -62,16 +62,16 @@ So using requesty.ai needs the following `engine.env` variables in our workflow 
 engine:
   id: claude
   env:
-    ANTHROPIC_BASE_URL: https://router.requesty.ai
+    ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
     ANTHROPIC_MODEL: anthropic/claude-sonnet-5-5
 
 network:
   allowed:
     - defaults
-    - router.requesty.ai #TODO: is this needed for requesty?
+    - router.eu.requesty.ai #TODO: is this needed for requesty?
 ```
 
-Staring at the last line you may already spotted that we need to configure `router.requesty.ai` [as an allowed network via the `network.allowed` keyword](https://github.github.com/gh-aw/reference/engines/?#custom-api-endpoints-via-environment-variables). This is needed, since the Agent Workflow Firewall (AWF) would otherwise block the request to requesty.
+Staring at the last line you may already spotted that we need to configure `router.eu.requesty.ai` [as an allowed network via the `network.allowed` keyword](https://github.github.com/gh-aw/reference/engines/?#custom-api-endpoints-via-environment-variables). This is needed, since the Agent Workflow Firewall (AWF) would otherwise block the request to requesty.
 
 
 As [the Requesty documentation states](https://www.requesty.ai/blog/claude-code-environment-variables-anthropic-base-url-auth-token), we should use `ANTHROPIC_AUTH_TOKEN` instead of `ANTHROPIC_API_KEY` when configuring a different LLM gateway than Anthropic.
@@ -95,7 +95,7 @@ gh aw compile
      ^^^^^^
  9 |   id: claude
 10 |   env:
-11 |     ANTHROPIC_BASE_URL: https://router.requesty.ai
+11 |     ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
 i → Adjust the permissions block to match the workflow's required scopes.
 ✗ compilation failed
 ```
@@ -143,13 +143,13 @@ permissions:
 engine:
   id: claude
   env:
-    ANTHROPIC_BASE_URL: https://router.requesty.ai
+    ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
     ANTHROPIC_MODEL: anthropic/claude-sonnet-5-5
 
 network:
   allowed:
     - defaults
-    - router.requesty.ai
+    - router.eu.requesty.ai
 ---
 
 # Repository Analysis
@@ -223,6 +223,18 @@ That one should run without warnings.
 It's also worth to note that using `--approve` [won't deactivate the strict mode generally](https://github.github.com/gh-aw/specs/safe-update-specification/), so it can be used savely if you were the one changing secrets.
 
 So now our generated workflow in [.github/workflows/first-agentic-workflow.lock.yml](.github/workflows/first-agentic-workflow.lock.yml) should be ready to be committed!
+
+
+# Trigger your first Agentic Workflow!
+
+As we use the `on:workflow_dispatch` keyword in our formatter workflow description, we can manually trigger our first Agentic Workflow e.g. via the GitHub Actions UI. The name is defined via the markdown heading under the formatter description - in our case: `# Repository Analysis`, so the workflow is named `Repository Analysis`:
+
+![](docs/manually-trigger-agentic-workflow-execution.png)
+
+This should start our first Agentic Workflow:
+
+![](/home/jonashackt/dev/github-agentic-workflows/docs/first-agentic-workflow-run.png)
+
 
 
 

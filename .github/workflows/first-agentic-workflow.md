@@ -14,7 +14,7 @@ engine:
 network:
   allowed:
     - defaults
-    - router.requesty.ai
+    - router.eu.requesty.ai
 ---
 
 # Repository Analysis
