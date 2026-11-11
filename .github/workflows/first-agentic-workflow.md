@@ -8,7 +8,7 @@ permissions:
 engine:
   id: claude
   env:
-    ANTHROPIC_BASE_URL: https://router.requesty.ai
+    ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
     ANTHROPIC_MODEL: anthropic/claude-sonnet-5-5
 
 network:

@@ -227,7 +227,7 @@ So now our generated workflow in [.github/workflows/first-agentic-workflow.lock.
 
 # Trigger your first Agentic Workflow!
 
-As we use the `on:workflow_dispatch` keyword in our formatter workflow description, we can manually trigger our first Agentic Workflow e.g. via the GitHub Actions UI. The name is defined via the markdown heading under the formatter description - in our case: `# Repository Analysis`, so the workflow is named `Repository Analysis`:
+As we use the `on:workflow_dispatch` keyword in our formatter workflow description, we can manually trigger our first Agentic Workflow e.g. via the GitHub Actions UI. The name is defined via the markdown heading under the formatter description - in our case: `# Repository Analysis`. So we need to explicitely click on the workflow named `Repository Analysis` and on `Run workflow` (you can leave the `aw_context` empty):
 
 ![](docs/manually-trigger-agentic-workflow-execution.png)
 
