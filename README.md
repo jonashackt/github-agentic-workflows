@@ -63,7 +63,7 @@ engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
-    ANTHROPIC_MODEL: anthropic/claude-sonnet-5-5
+    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu[1m]
 
 network:
   allowed:
@@ -72,6 +72,24 @@ network:
 ```
 
 Staring at the last line you may already spotted that we need to configure `router.eu.requesty.ai` [as an allowed network via the `network.allowed` keyword](https://github.github.com/gh-aw/reference/engines/?#custom-api-endpoints-via-environment-variables). This is needed, since the Agent Workflow Firewall (AWF) would otherwise block the request to requesty.
+
+
+You should also choose an approved model from the requesty model-library to configure in the `ANTHROPIC_MODEL` variable. You may find those via the direct link https://app.requesty.ai/model-library. A correct configuration for our requesty instance is:
+
+```shell 
+ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu[1m]
+```
+
+See also our console:
+
+![](docs/choose-requesty-approved-models.png)
+
+If you define a default Anthropic model name like `anthropic/claude-sonnet-5-5`, you may run into GitHub Actions errors like:
+
+```shell
+"content":[{"type":"text","text":"Failed to authenticate. API Error: 403 The requested model is not approved for this API key. An org or group admin can approve it in the Model Library (https://app.requesty.ai/model-library) or add it to the access list attached to this key or group"}]
+```
+
 
 
 As [the Requesty documentation states](https://www.requesty.ai/blog/claude-code-environment-variables-anthropic-base-url-auth-token), we should use `ANTHROPIC_AUTH_TOKEN` instead of `ANTHROPIC_API_KEY` when configuring a different LLM gateway than Anthropic.
