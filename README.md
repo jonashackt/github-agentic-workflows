@@ -63,7 +63,7 @@ engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
-    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu[1m]
+    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu
 
 network:
   allowed:
@@ -77,7 +77,7 @@ Staring at the last line you may already spotted that we need to configure `rout
 You should also choose an approved model from the requesty model-library to configure in the `ANTHROPIC_MODEL` variable. You may find those via the direct link https://app.requesty.ai/model-library. A correct configuration for our requesty instance is:
 
 ```shell 
-ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu[1m]
+ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu
 ```
 
 See also our console:

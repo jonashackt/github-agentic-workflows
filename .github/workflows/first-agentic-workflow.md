@@ -9,7 +9,7 @@ engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
-    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu[1m]
+    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu
 
 network:
   allowed:
