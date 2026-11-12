@@ -5,9 +5,6 @@ on:
 permissions:
   contents: read
 
-env:
-  GH_AW_MODEL_AGENT_CLAUDE: "vertex/claude-sonnet-5-5@eu[1m]"
-
 engine:
   id: claude
   env:

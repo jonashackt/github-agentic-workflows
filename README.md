@@ -46,24 +46,80 @@ Now we should [setup our preferred AI engine](https://github.github.com/gh-aw/re
 
 
 
-# Setup your preferred AI engine: Claude through requesty.ai
+# Setup your preferred AI engine: Using Agentic Workflows with Claude on Google Vertex (EU) through requesty.ai
 
 There are [build-in AI engines](https://github.github.com/gh-aw/reference/engines/) available for GitHub Agentic Workflows like GitHub Copilot (which is obviously the default), Claude Code & OpenAI Codex. And there is the possibility to use [custom AI engines](https://github.github.com/gh-aw/reference/third-party-agent/) including OpenCode, Cursor, DeepSeek Harness among others.
 
-As a regular Claude user, you may simply use `ANTHROPIC_API_KEY` [as documented in the build-in docs](https://github.github.com/gh-aw/engines/claude/) - and you're good to go.
+As a Claude user, you may simply use `ANTHROPIC_API_KEY` [as documented in the build-in docs](https://github.github.com/gh-aw/engines/claude/) - and you're good to go.
 
-But if you're using a unified AI gateway/LLM router (featuring multiple models) like [requesty.ai](https://www.requesty.ai/), you need to be able to configure a different `ANTHROPIC_BASE_URL` also, which isn't documented in the same area of the AI engine docs. But luckily in the reference docs at the [GitHub Actions secrets for AI engines](https://github.github.com/gh-aw/reference/auth/?#github-actions-secrets-for-ai-engines) paragraph there's the `Custom endpoints` section [for the ANTHROPIC_API_KEY](https://github.github.com/gh-aw/reference/auth/?#anthropic_api_key):
+But if you're using a AI gateway/LLM router (featuring multiple models) like [requesty.ai](https://www.requesty.ai/) things become a bit more complicated. Digging into the topic I was reminded (again), that knowing the architecture behind the scenes is always better than to stab in the dark. So using requesty with a EU-based setup together with Google Vertex AI as the Managed Inference Platform our architecture looks like this:
+
+```shell
++------------------------------------------------------+
+| GitHub Actions Runner                                |
+|                                                      |
+|  +------------------------------------------------+  |
+|  | Agent Workflow Firewall (AWF)                  |  |
+|  |                                                |  |
+|  |  +----------------------+                      |  |
+|  |  | Agent Container      |                      |  |
+|  |  | Claude Code          |                      |  |
+|  |  | No API credentials   |                      |  |
+|  |  +----------+-----------+                      |  |
+|  |             |                                  |  |
+|  |             | http://api-proxy:10001           |  |
+|  |             v                                  |  |
+|  |  +----------------------+                      |  |
+|  |  | API Proxy Sidecar    |                      |  |
+|  |  | - API credentials    |                      |  |
+|  |  | - Auth injection     |                      |  |
+|  |  | - Request routing    |                      |  |
+|  |  +----------+-----------+                      |  |
+|  |             |                                  |  |
+|  |             v                                  |  |
+|  |  +----------------------+                      |  |
+|  |  | Squid Proxy          |                      |  |
+|  |  | Network egress       |                      |  |
+|  |  +----------+-----------+                      |  |
+|  +-------------|----------------------------------+  |
++----------------|-------------------------------------+
+                 |
+                 | HTTPS
+                 v
++------------------------------------------------------+
+| Requesty EU                                          |
+| router.eu.requesty.ai                                |
+| AI Gateway / Model Router                            |
++----------------+-------------------------------------+
+                 |
+                 v
++------------------------------------------------------+
+| Google Cloud Vertex AI (EU)                          |
+| Managed Inference Platform                           |
+|                                                      |
+| Model: Anthropic Claude Sonnet 5.5                   |
++------------------------------------------------------+
+```
+
+GitHub Agentic Workflows runs Claude Code in an isolated agent container within a GitHub Actions runner. The Agent Workflow Firewall (AWF) provides a dedicated API proxy sidecar that securely injects API credentials and forwards model requests, keeping secrets inaccessible to the agent. Outbound network traffic is controlled through a separate Squid proxy.
+
+In the Requesty setup I use, the model requests are routed through the Requesty EU AI Gateway to Google Cloud Vertex AI, which provides managed inference for Anthropic models in the EU.
+
+
+
+## Configuring requesty.ai in Agentic Workflows
+
+So in order to use requesty.ai with Agentic Workflows, we need to be able to configure a different `ANTHROPIC_BASE_URL` also. This isn't documented in [the same area of the AI engine docs](https://github.github.com/gh-aw/reference/engines/). But luckily in the reference docs at the [GitHub Actions secrets for AI engines](https://github.github.com/gh-aw/reference/auth/?#github-actions-secrets-for-ai-engines) paragraph there's the `Custom endpoints` section [for the ANTHROPIC_API_KEY](https://github.github.com/gh-aw/reference/auth/?#anthropic_api_key):
 
 > To route Claude through a custom Anthropic-compatible endpoint (e.g., an internal proxy or Azure-hosted model), set ANTHROPIC_BASE_URL in engine.env and store any additional credentials as secrets.
 
-So using requesty.ai needs the following `engine.env` variables in our workflow file [.github/workflows/first-agentic-workflow.md](.github/workflows/first-agentic-workflow.md):
+So using requesty.ai needs the following `engine.env` variables in our workflow file [.github/workflows/first-agentic-workflow.md](.github/workflows/first-agentic-workflow.md) (if you aren't using the requesty EU endpoint, you need to leave out the `.eu` from the urls):
 
 ```yaml
 engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
-    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu
 
 network:
   allowed:
@@ -71,26 +127,114 @@ network:
     - router.eu.requesty.ai #TODO: is this needed for requesty?
 ```
 
-Staring at the last line you may already spotted that we need to configure `router.eu.requesty.ai` [as an allowed network via the `network.allowed` keyword](https://github.github.com/gh-aw/reference/engines/?#custom-api-endpoints-via-environment-variables). This is needed, since the Agent Workflow Firewall (AWF) would otherwise block the request to requesty.
+Additionally we need to configure `router.eu.requesty.ai` [as an allowed network via the `network.allowed` keyword](https://github.github.com/gh-aw/reference/engines/?#custom-api-endpoints-via-environment-variables). This is needed, since the Agent Workflow Firewall (AWF) would otherwise block the request to requesty.
 
 
-You should also choose an approved model from the requesty model-library to configure in the `ANTHROPIC_MODEL` variable. You may find those via the direct link https://app.requesty.ai/model-library. A correct configuration for our requesty instance is:
 
-```shell 
-ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu
-```
 
-See also our console:
+
+## Getting the requesty model declaration through the GitHub Agentic Workflows compiler
+
+You should also choose an approved model from the requesty model-library to configure in the `ANTHROPIC_MODEL` variable. You may find those via the direct link https://app.requesty.ai/model-library. Looking for the exact name, you have to search for it in your requesty.ai console:
 
 ![](docs/choose-requesty-approved-models.png)
 
-If you define a default Anthropic model name like `anthropic/claude-sonnet-5-5`, you may run into GitHub Actions errors like:
+
+Leaving out the model definition completely, would use a default Anthropic model name like `anthropic/claude-sonnet-5-5` and will mostly run into GitHub Actions errors like:
 
 ```shell
 "content":[{"type":"text","text":"Failed to authenticate. API Error: 403 The requested model is not approved for this API key. An org or group admin can approve it in the Model Library (https://app.requesty.ai/model-library) or add it to the access list attached to this key or group"}]
 ```
 
+The default GitHub Agentic Workflow [model aliases are documented here](https://github.github.com/gh-aw/reference/model-tables/).
 
+
+
+### Trying engine.model to set to vertex/claude-sonnet-5-5@eu
+
+The most straighforward approach for me was to use [the `engine.model` variable](https://github.github.com/gh-aw/reference/engines/#default-model-routing) to configure my requesty approved model name:
+
+```yaml
+engine:
+  id: claude
+  model: vertex/claude-sonnet-5-5@eu
+```
+
+But here I ran into an compilation error running `gh aw compile`:
+
+```shell
+gh aw compile
+✗ Compiled 1 workflow: 0 succeeded, 1 failed, 1 error, 0 warnings
+
+✗ Failed workflows:
+✗ first-agentic-workflow.md
+
+✗ first-agentic-workflow.md (1 error(s)):
+  • 🟡 MEDIUM PRIORITY:
+  • 1. .github/workflows/first-agentic-workflow.md:1:1: error: engine.model: model identifier: character '@' is not allowed in model token "claude-sonnet-5-5@eu[1m]" (segment type: model)
+i → Fix this configuration issue and re-run `gh aw compile`.
+✗ compilation failed
+```
+
+I turned out that the [GitHub Model Alias Format Specification](https://github.github.com/gh-aw/specs/model-alias-specification/) doesn't support the special characters `@` and `[]`.
+
+
+
+### Trying engine.env.ANTHROPIC_MODEL to set to vertex/claude-sonnet-5-5@eu
+
+So in my case I wanted to configure the requesty-approved model `vertex/claude-sonnet-5-5@eu`. My first attempt was to use the `engine.env.ANTHROPIC_MODEL` variable like this (which [is documented in the Claude Code Docs](https://code.claude.com/docs/en/settings#a-flag-or-environment-variable-sets-the-same-thing)):
+
+```shell 
+engine:
+  id: claude
+  env:
+    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu
+```
+
+The Actions error remained:
+
+```shell
+"content":[{"type":"text","text":"Failed to authenticate. API Error: 403 The requested model is not approved for this API key. An org or group admin can approve it in the Model Library (https://app.requesty.ai/model-library) or add it to the access list attached to this key or group"}]
+```
+
+Digging a bit deeper, I found that the GitHub Agentic Workflow engine just ignored or dropped the `engine.env.ANTHROPIC_MODEL` variable. I saw in the Actions logs, in the second job under `Execute Claude Code CLI`:
+
+```shell
+ [claude-harness] 2026-11-12T08:24:57.401Z model resolution: engine=claude role=main configured=claude-sonnet-5 resolved=claude-sonnet-5 provider=anthropic status=exact
+```
+
+So I needed to try something different.
+
+
+
+### What about GH_AW_MODEL_AGENT_CLAUDE?
+
+I stumbled upon the [`GH_AW_MODEL_AGENT_CLAUDE` environment variable](https://github.github.com/gh-aw/reference/environment-variables/#model-override-variables), which I found in the model override environment variables section of the GitHub Agentic Workflows docs.
+
+Ideally I wanted a solution, where the variable would be set inside the workflow file also, so I tried to directly define it there like this:
+
+```yaml
+env:
+  GH_AW_MODEL_AGENT_CLAUDE: "vertex/claude-sonnet-5-5@eu[1m]"
+```
+
+Sadly, this also didn't make it through the GitHub Agentic Workflow engine:
+
+```shell
+ [claude-harness] 2026-11-12T08:24:57.401Z model resolution: engine=claude role=main configured=claude-sonnet-5 resolved=claude-sonnet-5 provider=anthropic status=exact
+```
+
+But there was a solution: Defining the `GH_AW_MODEL_AGENT_CLAUDE` variable on the GitHub repository level. Setting the variable as repository variable worked finally:
+
+```shell
+gh variable set GH_AW_MODEL_AGENT_CLAUDE --body 'vertex/claude-sonnet-5-5@eu[1m]'
+gh variable get GH_AW_MODEL_AGENT_CLAUDE
+```
+
+
+## Where to put the Requesty API token: `ANTHROPIC_AUTH_TOKEN` vs. `ANTHROPIC_API_KEY`
+
+We somehow need to configure our Requesty API token to work with GitHub Agentic Workflows. It's quite counterintuitive I have learned!
 
 As [the Requesty documentation states](https://www.requesty.ai/blog/claude-code-environment-variables-anthropic-base-url-auth-token), we should use `ANTHROPIC_AUTH_TOKEN` instead of `ANTHROPIC_API_KEY` when configuring a different LLM gateway than Anthropic.
 
@@ -126,7 +270,9 @@ The reason is that the Agent Workflow Firewall (AWF) [blocks the usage of such s
 
 This prevents secrets from beeing injected into workflows - and thus from potential leaks. Which might also be the good reason to have the scrict mode turned on in `gh aw compile`.
 
-So let's try to use the `ANTHROPIC_API_KEY` GitHub Actions secret instead. You can create the Secret using the `gh aw` CLI like this:
+So just the opposide as [the Requesty documentation states](https://www.requesty.ai/blog/claude-code-environment-variables-anthropic-base-url-auth-token), with GitHub Agentic Workflows I tried to use the `ANTHROPIC_API_KEY` GitHub Actions secret instead. And: it worked!
+
+You can create the Secret using the `gh aw` CLI like this:
 
 ```shell
 gh aw secrets set ANTHROPIC_API_KEY --value "REQUESTY_API_KEY"
@@ -134,14 +280,9 @@ gh aw secrets set ANTHROPIC_API_KEY --value "REQUESTY_API_KEY"
 
 or using the GitHub UI:
 
-//TODO: change Secrets name
-
 ![](docs/github-actions-secrets-for-agentic-workflows.png)
 
 Since this is a Agent Workflows build-in engine key, we don't need to define it inside our workflow anywhere.
-
-
-
 
 
 
@@ -162,7 +303,6 @@ engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
-    ANTHROPIC_MODEL: anthropic/claude-sonnet-5-5
 
 network:
   allowed:
@@ -241,6 +381,7 @@ That one should run without warnings.
 It's also worth to note that using `--approve` [won't deactivate the strict mode generally](https://github.github.com/gh-aw/specs/safe-update-specification/), so it can be used savely if you were the one changing secrets.
 
 So now our generated workflow in [.github/workflows/first-agentic-workflow.lock.yml](.github/workflows/first-agentic-workflow.lock.yml) should be ready to be committed!
+
 
 
 # Trigger your first Agentic Workflow!
