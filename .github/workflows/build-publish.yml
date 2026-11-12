@@ -20,9 +20,6 @@ jobs:
   publish-to-gh-container-registry:
     needs: build-and-test
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - uses: actions/checkout@v6
@@ -47,5 +44,4 @@ jobs:
               --path . \
               --env "BP_OCI_SOURCE=https://github.com/jonashackt/github-agentic-workflows" \
               --env "BP_JVM_VERSION=21" \
-              --cache-image ghcr.io/jonashackt/github-agentic-workflows-paketo-cache-image:latest \
               --publish
