@@ -408,7 +408,7 @@ But as the setup is working now, it's time to add some code that our Agentic Wor
 
 > Provide a prioritized summary.
 
-So I copied the code from https://github.com/jonashackt/microservice-api-spring-boot - let's see what our Agentic Workflow does with that one! It should be an ideal project since I didn't head an eye on this for some time now (lot's of renovate PRs open...).
+So I copied the code from https://github.com/jonashackt/microservice-api-spring-boot - let's see what our Agentic Workflow does with that one! It should be an ideal project since I didn't head an eye on this for some time now (lot's of renovate PRs open, Spring Boot 3.5 - while 4.2 is the latest release etc.).
 
 
 
