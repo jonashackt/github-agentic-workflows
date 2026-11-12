@@ -231,6 +231,8 @@ gh variable set GH_AW_MODEL_AGENT_CLAUDE --body 'vertex/claude-sonnet-5-5@eu[1m]
 gh variable get GH_AW_MODEL_AGENT_CLAUDE
 ```
 
+This definition doesn't live in the workflow yaml file sadly, but I made a note in the back of my head to create an issue for that one later...
+
 
 ## Where to put the Requesty API token: `ANTHROPIC_AUTH_TOKEN` vs. `ANTHROPIC_API_KEY`
 
@@ -392,9 +394,21 @@ As we use the `on:workflow_dispatch` keyword in our formatter workflow descripti
 
 This should start our first Agentic Workflow:
 
-![](/home/jonashackt/dev/github-agentic-workflows/docs/first-agentic-workflow-run.png)
+![](docs/first-agentic-workflow-run.png)
 
 
+
+# Add some code to be analysed
+
+I started with a completely empty repository just to see, what I would need to configure in order to use GitHub Agentic Workflows.
+
+But as the setup is working now, it's time to add some code that our Agentic Workflow instruction can work on:
+
+> Analyze the repository and identify potential improvements to its build and CI/CD configuration.
+
+> Provide a prioritized summary.
+
+So I copied the code from https://github.com/jonashackt/microservice-api-spring-boot - let's see what our Agentic Workflow does with that one! It should be an ideal project since I didn't head an eye on this for some time now (lot's of renovate PRs open...).
 
 
 
