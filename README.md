@@ -410,8 +410,13 @@ But as the setup is working now, it's time to add some code that our Agentic Wor
 
 So I copied the code from https://github.com/jonashackt/microservice-api-spring-boot - let's see what our Agentic Workflow does with that one! It should be an ideal project since I didn't head an eye on this for some time now (lot's of renovate PRs open, Spring Boot 3.5 - while 4.2 is the latest release etc.).
 
+Now after a successful run of our Agentic Workflow (we need to trigger that currently manually), the agents creates a GitHub Issue with proposed & prioritized improvements:
 
+![](docs/agentic-workflows-generated-repository-analysis.png)
 
+which holds some interesting details:
+
+![](docs/agentic-workflows-generated-repository-analysis-details.png)
 
 
 # Links
