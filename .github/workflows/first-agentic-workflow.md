@@ -5,11 +5,13 @@ on:
 permissions:
   contents: read
 
+env:
+  GH_AW_MODEL_AGENT_CLAUDE: "vertex/claude-sonnet-5-5@eu[1m]"
+
 engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: https://router.eu.requesty.ai
-    ANTHROPIC_MODEL: vertex/claude-sonnet-5-5@eu
 
 network:
   allowed:
