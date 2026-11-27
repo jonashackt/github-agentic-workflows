@@ -21,7 +21,7 @@ Use this skill for pull requests that change `pom.xml`, `renovate.json` or GitHu
 - Make the smallest change that fixes the failure (renamed API, moved package, changed property). Never delete or weaken tests to get a green build.
 - If the cause is unclear after reading the build log and release notes, do not guess: report it.
 
-## Merge policy
+## Scope
 
-- Merge only when the `build-and-test` check is green and the update is not a major version bump.
-- Never merge a major bump; leave a review comment summarizing the risk instead.
+- You never merge. Renovate merges green patch and minor updates itself; major bumps are merged by the maintainer.
+- Fix the build for major bumps too, but mention the breaking-change risk in a review comment.
