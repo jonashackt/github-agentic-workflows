@@ -479,6 +479,30 @@ which holds some interesting details:
 ![](docs/agentic-workflows-generated-repository-analysis-details.png)
 
 
+
+# Keep dependencies up to date: Renovate + an Agent that fixes broken PRs
+
+Next goal: I don't want to look at dependency update PRs anymore. [Renovate](https://github.com/apps/renovate) is built for this, but it can't fix a PR if the update breaks the build. That's where an Agentic Workflow comes in: [.github/workflows/skill-pr-reviewer.md](.github/workflows/skill-pr-reviewer.md).
+
+__Who does what?__
+
+| Who | Does what |
+|---|---|
+| Renovate | opens the update PRs and merges them as soon as `build-and-test` is green (`automerge`, majors included - see [renovate.json](renovate.json)) |
+| Agent | wakes up only if the build of a `renovate/**` branch fails, reproduces it with `mvn package` and pushes a fix to the PR branch - until the PR is green |
+| Me | only look at PRs the agent couldn't fix after 2 attempts (it leaves a review comment with the error instead of guessing) |
+
+The agent never merges. That's on purpose: the [`merge-pull-request` safe output](https://github.github.com/gh-aw/reference/safe-outputs-pull-requests/#merge-pull-request-merge-pull-request) refuses merges to the default branch anyway - and Renovate is made for that.
+
+__What you need to set up:__
+
+1. Install the Renovate GitHub App for the repository
+2. Create a fine-grained PAT (Contents: read & write) and store it as `GH_AW_CI_TRIGGER_TOKEN`: `gh aw secrets set GH_AW_CI_TRIGGER_TOKEN --value "<pat>"`. Pushes with the default `GITHUB_TOKEN` don't start new workflow runs - so after a fix, there would be no new build. With the PAT the agent pushes an extra empty commit that does. Use squash merges to hide those.
+3. Branch protection on `main` requiring `build-and-test`, so Renovate only merges green PRs
+
+__What the agent is (not) allowed to change:__ gh-aw protects dependency files, `.github/` and `.claude/` by default - changes there request a human review instead of being pushed. I excluded `pom.xml`, since that's where most Maven fixes happen. Workflows in `.github/` stay protected on purpose, so the agent can't change the pipeline that judges its own fix. That means: GitHub Actions version bumps are opened & merged by Renovate, but if one breaks the build, that's a case for me.
+
+
 # Links
 
 https://docs.github.com/en/copilot/concepts/agent-capabilities/agent-powered-workflows-and-operations/about-github-agentic-workflows
