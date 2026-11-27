@@ -23,5 +23,5 @@ Use this skill for pull requests that change `pom.xml`, `renovate.json` or GitHu
 
 ## Scope
 
-- You never merge. Renovate merges green patch and minor updates itself; major bumps are merged by the maintainer.
-- Fix the build for major bumps too, but mention the breaking-change risk in a review comment.
+- You never merge. Renovate merges every green update itself, majors included.
+- Fix the build for major bumps too, but check the upstream release notes first.

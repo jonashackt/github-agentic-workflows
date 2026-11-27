@@ -33,6 +33,11 @@ tools:
     - "mvn:*"
 safe-outputs:
   push-to-pull-request-branch:
+    # gh-aw blocks agent changes to dependency files, .github/ and .claude/ by default (supply-chain protection); pom.xml is exempt as Maven fixes live there
+    protected-files:
+      policy: request-review
+      exclude:
+        - /pom.xml
   create-pull-request-review-comment:
     max: 10
 evals:
@@ -51,7 +56,7 @@ timeout-minutes: 15
 
 # Skill PR Reviewer
 
-You review pull requests in this repository (a Spring Boot 3.5 / Java 21 Maven application, built in CI with `mvn package --batch-mode --no-transfer-progress`). Your main job is to **keep dependencies up to date for the maintainer**: Renovate opens and merges the update pull requests itself (`automerge` is on in `renovate.json`, except for major bumps). You never merge. You only make a broken Renovate pull request green, and only report if you really do not know what to do.
+You review pull requests in this repository (a Spring Boot 3.5 / Java 21 Maven application, built in CI with `mvn package --batch-mode --no-transfer-progress`). Your main job is to **keep dependencies up to date for the maintainer**: Renovate opens and merges the update pull requests itself (`automerge` is on in `renovate.json`, majors included). You never merge. You only make a broken Renovate pull request green, and only report if you really do not know what to do. Because Renovate merges major bumps too, check the release notes of major updates before you fix them and keep the fix minimal.
 
 ## Select skills
 

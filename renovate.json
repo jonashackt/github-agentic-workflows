@@ -2,8 +2,5 @@
   "extends": [
     "config:recommended"
   ],
-  "automerge": true,
-  "major": {
-    "automerge": false
-  }
+  "automerge": true
 }
