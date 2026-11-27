@@ -3,11 +3,16 @@ name: skill-pr-reviewer
 description: Review pull requests with installed expert skills
 on:
   pull_request:
-    types: [opened, ready_for_review]
+    types: [ready_for_review]
+  workflow_run:
+    workflows: ["build-publish"]
+    types: [completed]
+    branches: ["renovate/**"]
 permissions:
   contents: read
   issues: read
   pull-requests: read
+  actions: read
 engine:
   id: claude
   env:
@@ -54,8 +59,10 @@ Select the installed skills that match the pull request's change type. Dependenc
 
 ## Renovate pull requests (author `renovate[bot]`)
 
+This workflow also runs when the `build-publish` workflow completes on a `renovate/**` branch. In that case find the open pull request for the workflow run's head branch and read the conclusion of the `build-and-test` job, so you always act on a finished build.
+
 1. Determine what was updated and whether it is a patch, minor or major bump.
-2. Check the status of the `build-and-test` check. Renovate has `automerge` disabled in `renovate.json`, so merging is your job. If the check is still running, do not merge; the build output is not final yet. If it is green, no repair is needed.
+2. Check the result of the finished `build-and-test` job. Renovate has `automerge` disabled in `renovate.json`, so merging is your job. If it succeeded, no repair is needed.
 3. If the build fails, reproduce it with `mvn package --batch-mode --no-transfer-progress`, apply the smallest fix and push it to the pull request branch. Never remove or weaken tests.
 4. Merge the pull request only if the build is green and it is **not** a major bump (this matches `renovate.json`, which disables automerge for majors).
 5. For major bumps, or when a fix is beyond what you can determine from the build log and release notes, do not merge or guess. Leave a review comment on the relevant diff line stating the exact failing command or error and what you tried.
