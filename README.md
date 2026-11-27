@@ -332,6 +332,66 @@ gh aw compile
 
 This will generate the "real" GitHub Actions based Agentic Workflow for us, residing in a `.lock.yml` file inside the `.github/workflows` dir. In our example this is [.github/workflows/first-agentic-workflow.lock.yml](.github/workflows/first-agentic-workflow.lock.yml).
 
+The whole flow from markdown file to running agents looks like this:
+
+```
+  YOU                              GH-AW                               GITHUB ACTIONS
+  ───                              ─────                               ──────────────
+
+ ┌──────────────────────────┐
+ │ .github/workflows/       │
+ │   first-agentic-         │   1. you write it
+ │   workflow.md            │      in natural language
+ │                          │
+ │ ---                      │
+ │ on: workflow_dispatch    │   <- Frontmatter (YAML):
+ │ permissions: read        │      trigger, permissions, engine,
+ │ engine: claude           │      network, tools, safe-outputs
+ │ ---                      │
+ │                          │
+ │ # Repository Analysis    │   <- Markdown body:
+ │ "Analyze the repo and    │      the instruction for the
+ │  identify improvements"  │      agent (the prompt)
+ └────────────┬─────────────┘
+              │
+              │  2. gh aw compile
+              ▼
+ ┌──────────────────────────┐
+ │       gh-aw CLI          │   validates the frontmatter,
+ │  (GitHub CLI extension)  │   checks security rules,
+ │                          │   pins actions by SHA
+ └────────────┬─────────────┘
+              │
+              │  3. generates
+              ▼
+ ┌──────────────────────────┐
+ │ .github/workflows/       │
+ │   first-agentic-         │   Standard GitHub Actions
+ │   workflow.lock.yml      │   workflow
+ │                          │   (don't edit by hand!)
+ └────────────┬─────────────┘
+              │
+              │  4. git commit + push
+              ▼
+ ┌──────────────────────────┐        Trigger (workflow_dispatch,
+ │    GitHub Repository     │ ─────  issue, schedule, PR ...)  ─────┐
+ └──────────────────────────┘                                       │
+                                                                    ▼
+                                           ┌───────────────────────────────────────┐
+                                           │          GitHub Actions Runner        │
+                                           │                                       │
+                                           │  ┌─────────────┐   ┌───────────────┐  │
+                                           │  │  Agent Job  │   │  Safe-Output  │  │
+                                           │  │ (read-only) │──▶│  Job (write)  │  │
+                                           │  │ AI engine   │   │ issue / PR /  │  │
+                                           │  │ + MCP tools │   │ comment       │  │
+                                           │  └─────────────┘   └───────────────┘  │
+                                           └───────────────────────────────────────┘
+                                                                    │
+                                                                    ▼
+                                                    Result: issue, PR, comment, report
+```
+
 
 The `gh aw compile` should work, but also outputs the following warning:
 
