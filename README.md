@@ -480,6 +480,16 @@ which holds some interesting details:
 
 
 
+# Craft your Agentic Workflows
+
+For all the other stages in working with Agentic Workflows we can use - guess what - agents!
+
+And there's a GitHub Agentic Workflow Generator waiting to generate the prompts you can throw at your agent of choice over at https://githubnext.github.io/gh-aw-wizard/:
+
+![](docs/AgenticWorkflowGenerator.png)
+
+
+
 # Keep dependencies up to date: Renovate + an Agent that fixes broken PRs
 
 Next goal: I don't want to look at dependency update PRs anymore. [Renovate](https://github.com/apps/renovate) is built for this, but it can't fix a PR if the update breaks the build. That's where an Agentic Workflow comes in: [.github/workflows/skill-pr-reviewer.md](.github/workflows/skill-pr-reviewer.md).
@@ -497,8 +507,20 @@ The agent never merges. That's on purpose: the [`merge-pull-request` safe output
 __What you need to set up:__
 
 1. Install the Renovate GitHub App for the repository
-2. Create a fine-grained PAT (Contents: read & write) and store it as `GH_AW_CI_TRIGGER_TOKEN`: `gh aw secrets set GH_AW_CI_TRIGGER_TOKEN --value "<pat>"`. Pushes with the default `GITHUB_TOKEN` don't start new workflow runs - so after a fix, there would be no new build. With the PAT the agent pushes an extra empty commit that does. Use squash merges to hide those.
-3. Branch protection on `main` requiring `build-and-test`, so Renovate only merges green PRs
+2. Create a fine-grained PAT (Contents: read & write)
+3. Store the PAT as a repository secret called `GH_AW_CI_TRIGGER_TOKEN`: `gh aw secrets set GH_AW_CI_TRIGGER_TOKEN --value "<pat>"`. Pushes with the default `GITHUB_TOKEN` don't start new workflow runs - so after a fix, there would be no new build. With the PAT the agent pushes an extra empty commit that does. Use squash merges to hide those.
+4. Branch protection on `main` requiring `build-and-test`, so Renovate only merges green PRs. 
+
+Protecting the main branch, you need to create a __New branch ruleset__ under __Ruleset__ in the repository settings:
+
+Be sure to choose yourself as a bypass and set the target branch to the `default` branch (which is main).
+
+Also check `Require a pull request before merging` with 0 required approvals in order that Renovate doesn't block itself and `Block force pushes` also. Be sure to check `Require status checks to pass` and choose the GitHub Action workflow step needed to run green:
+
+![](docs/github-protected-main-branch.png)
+
+That's it, your main branch should be protected.
+
 
 __What the agent is (not) allowed to change:__ gh-aw protects dependency files, `.github/` and `.claude/` by default - changes there request a human review instead of being pushed. I excluded `pom.xml`, since that's where most Maven fixes happen. Workflows in `.github/` stay protected on purpose, so the agent can't change the pipeline that judges its own fix. That means: GitHub Actions version bumps are opened & merged by Renovate, but if one breaks the build, that's a case for me.
 
